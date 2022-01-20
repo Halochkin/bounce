@@ -96,6 +96,21 @@
   </script>
 </test-html>
 
+<test-html test="../childChanged/testDynamic2.html">
+  <script expected>
+    [
+      "constructor",
+      "connected",
+      ["childChanged", ["#text", "LI", "#text", "LI", "#text", "LI", "#text"]],
+      "before",
+      "after",
+      "before prt",
+      ["childChanged", ["#text", "#text", "LI", "#text", "LI", "#text"]],
+      "after prt"
+    ]
+  </script>
+</test-html>
+
 <test-html test="../childChanged/testAssignNodes.html">
   <script expected>
     [
@@ -146,7 +161,8 @@
   <script expected>
     [
       ["WEBCOMP-A", ["new", ["#text", "WEBCOMP-B", "#text"]], ["old", []], ["added", ["#text", "WEBCOMP-B", "#text"]], ["removed", []]],
-      ["WEBCOMP-B", ["new", []], ["old", []], ["added", []], ["removed", []]]
+      ["WEBCOMP-B", ["new", []], ["old", []], ["added", []], ["removed", []]],
+      ["WEBCOMP-A", ["new", ["#text", "#text"]], ["old", ["#text", "WEBCOMP-B", "#text"]], ["added", []], ["removed", ["WEBCOMP-B"]]]
     ]
   </script>
 </test-html>
