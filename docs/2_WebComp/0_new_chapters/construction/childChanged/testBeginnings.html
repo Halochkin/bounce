@@ -3,8 +3,8 @@
 <script src="ChildChangedCallback.js"></script>
 <script>
   (function () {
-    function printCB(type, el, rec) {
-      console.log(el.__id, el.tagName, type, rec);
+    function printCB(type, el, nodes) {
+      console.log(el.__id, el.tagName, type, nodes?.now);
     }
 
     let ids = 0;
@@ -17,8 +17,8 @@
         printCB('constructor', this);
       }
 
-      childChangedCallback(rec) {
-        printCB("childChanged", this, rec);
+      childChangedCallback(nodes) {
+        printCB("childChanged", this, nodes);
       }
     }
 
@@ -48,8 +48,8 @@
         this.shadowRoot.append(clone);
       }
 
-      childChangedCallback(rec) {
-        printCB("childChanged", this, rec);
+      childChangedCallback(nodes) {
+        printCB("childChanged", this, nodes);
       }
     }
 
