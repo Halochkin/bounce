@@ -1,19 +1,18 @@
 <div href="testMonkeyPatch.html"></div>
-<div href="testParserBreak.html"></div>
-<div href="testConstructionFrame.html"></div>
-<div href="testReadyCallbacks.html"></div>
-<div href="testChildChangedCallback.html"></div>
+<div href="../constructionReady/index.html"></div>
+<div href="../childChanged/index.html"></div>
 <div href="testCustomAttributes.html"></div>
 <div href="testHTMLEventLoopElement.html"></div>
 <div href="testHTMLEventElement.html"></div>
 <div href="testHTMLTaskElement.html"></div>
 <div off href="testProblems.html"></div>
 
-<script type="module" src="TestComponent.js"></script>
-<script type="module">
-
-  for (let test of document.querySelectorAll("div:not([off])")) {
-    const href = new URL(test.getAttribute('href'), location.href);
-    test.innerHTML = await (await fetch(href)).text();
-  }
+<script>
+  (async function () {
+    for (let test of document.querySelectorAll("div:not([off])")) {
+      const href = new URL(test.getAttribute('href'), location.href);
+      test.innerHTML = await (await fetch(href)).text();
+    }
+  })();
 </script>
+<script src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@v1.0.0/TestHTML.js"></script>

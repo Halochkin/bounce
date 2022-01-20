@@ -1,0 +1,41 @@
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
+<script src="ChildChangedCallback.js"></script>
+<script>
+  class OuterComp extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: 'open', slotAssignment: 'manual'});
+      this.shadowRoot.innerHTML = '<ul><slot></slot></ul>'
+      console.log('constructor');
+    }
+
+    connectedCallback() {
+      console.log('connected');
+    }
+
+    childChangedCallback(nodes) {
+      console.log("childChanged", nodes.now.map(n => n.nodeName));
+      this.shadowRoot.children[0].children[0].assign(...nodes.now);
+    }
+  }
+
+  customElements.define('outer-comp', OuterComp);
+</script>
+
+<h3>Test of shadowDom construction frames</h3>
+<outer-comp>
+  <li>1</li>
+  <li>2</li>
+  <li>3</li>
+</outer-comp>
+
+<script>
+  setTimeout(function () {
+    console.log("before");
+    Promise.resolve().then(() => console.log("before prt"));
+    const liElement = document.querySelector("li");
+    liElement.remove();
+    console.log("after");
+    Promise.resolve().then(() => console.log("after prt"));
+  }, 10);
+</script>

@@ -1,0 +1,48 @@
+<script
+    src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
+<script src="ChildChangedCallback.js"></script>
+<script>
+  class FramedOrderedList extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: 'open', slotAssignment: 'manual'});
+      this.shadowRoot.innerHTML = `<ol><slot></slot></ol>`
+      console.log("constructor", this.tagName);
+    }
+
+    childChangedCallback(nodes) {
+      console.log("childChangedCallback", this.tagName);
+      console.log(nodes.now.map(n => n.nodeName));
+      this.shadowRoot.querySelector('slot').assign(...this.childNodes);
+    }
+  }
+
+  customElements.define("frame-ol", FramedOrderedList);
+
+  class FrameFramedOrderedList extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: 'open', slotAssignment: 'manual'});
+      this.shadowRoot.innerHTML = `<frame-ol><slot></slot></frame-ol>`
+      console.log("constructor", this.tagName);
+    }
+
+    childChangedCallback(nodes) {
+      console.log("childChangedCallback", this.tagName);
+      console.log(nodes.now.map(n => n.nodeName));
+      this.shadowRoot.querySelector('slot').assign(...this.childNodes);
+    }
+  }
+
+  customElements.define("frame-frame-ol", FrameFramedOrderedList);
+</script>
+<frame-ol a>
+  <li>hello</li>
+  <li>world</li>
+  <li>bob</li>
+</frame-ol>
+<frame-frame-ol a>
+  <li>hello</li>
+  <li>world</li>
+  <li>bob</li>
+</frame-frame-ol>

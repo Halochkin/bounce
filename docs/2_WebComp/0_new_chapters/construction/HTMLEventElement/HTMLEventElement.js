@@ -98,6 +98,17 @@
             yield* this.dynamo_core(target.assignedSlot, false, depth + i + 1, pos + 1);
           }
           if (target.attributes)
+            //todo this itar doesn't work. if the attribute event listener removes the attribute itself,
+            // or another attribute on the host element listed before it,
+            // then all hell breaks loose.
+            // We need to clone the list of attributes before the running through it.
+            // This we need a test for.
+            // We need an action attribute that removes and adds attributes, and
+            // then we need a plan for how this should behave dynamically.
+            // I think that they should work immediately, but the event listeners doesn't do that.
+            // This is an issue that we should a) test for, b) specify. What should be the dynamic behavior of event listeners
+            // added on the same element? I think they should be just as dynamic as event listeners added
+            // on other elements later in the propagation path. Why not?
             for (let i = 0; i < target.attributes.length; i++)          //second attributes
               yield {target: target.attributes[i], root: target.attributes[i], depth: depth + i, pos: pos+1};
         }
@@ -127,7 +138,7 @@
 
     static* dynamo_preventDefaultStops(t, eventEl) {
       let previousRoot;
-      for (let {target, root} of this.dynamo_neverSameTargetTwice(t, eventEl.composed, false)) {
+      for (let {target, root} of this.dynamo_neverSameTargetTwice(t, eventEl.composed === "true", false)) {
         if (previousRoot === root)
           yield {target, newDocument: false};
         else if (eventEl.defaultPrevented)  //defaultPrevented is a global variable... this could be a problem...

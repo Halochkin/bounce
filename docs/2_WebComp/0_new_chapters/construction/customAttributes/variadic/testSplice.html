@@ -1,0 +1,27 @@
+<script>
+  const sequence = [1,2,3];
+  const deleteCount = 1;
+  const position = 1;
+  const target1 = [1,2,3];
+  const target2 = [1,2,3];
+  const target3 = [1,2,3];
+
+  //nice `apply` way
+  target1.splice(position, deleteCount, ...sequence);
+
+  //the verbose literal, `call` way to expose the conceptual variadic inner loop of splice
+  for (let i = 0; i < sequence.length; i++) {
+    if(i === 0){
+      target2.splice(position, deleteCount);
+    } else {
+      target2.splice(position, 0);
+    }
+    target2.splice(position + i, 0, sequence[i]);
+  }
+
+  //the more normal `call` way to get the same output, that would also be a more likely way to implement `splice()`
+  target3.splice(position, deleteCount);
+  for (let i = 0; i < sequence.length; i++)
+    target3.splice(position + i, 0, sequence[i]);
+  console.log(target1, target2, target3);
+</script>

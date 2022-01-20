@@ -1,12 +1,10 @@
-<script src="../ParserBreakEvent/ParserBreakEvent.js"></script>
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
 <script src="../MonkeyPatch/MonkeyPatch.js"></script>
-<script src="../constructionFrame/constructionFrame.js"></script>
-<script src="AttributeReadyCallback.js"></script>
-<script src="ChildReadyCallback.js"></script>
+<script src="readyCallbacks.js"></script>
 <script>
   (function () {
     function printCB(type, el) {
-      console.log(el.__id, el.tagName, type);
+      console.log(el.__id+ ", " + el.tagName+ ", " + type);
     }
 
     let ids = 0;
@@ -20,12 +18,10 @@
       }
 
       attributeChangedCallback() {
-        super.attributeChangedCallback();
         printCB("attributeChanged", this);
       }
 
       connectedCallback() {
-        super.connectedCallback();
         printCB("connected", this);
       }
 
@@ -53,12 +49,10 @@
       }
 
       attributeChangedCallback() {
-        super.attributeChangedCallback();
         printCB("attributeChanged", this);
       }
 
       connectedCallback() {
-        super.connectedCallback();
         printCB("connected", this);
       }
 
@@ -87,12 +81,10 @@
       }
 
       attributeChangedCallback() {
-        super.attributeChangedCallback();
         printCB("attributeChanged", this);
       }
 
       connectedCallback() {
-        super.connectedCallback();
         printCB("connected", this);
       }
 

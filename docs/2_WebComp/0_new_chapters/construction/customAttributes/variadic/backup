@@ -1,0 +1,637 @@
+Skip to content
+Search or jump to…
+Pull requests
+Issues
+Marketplace
+Explore
+
+@orstavik
+whatwg
+/
+html
+Public
+625
+5.1k1.9k
+Code
+Issues
+1.4k
+Pull requests
+136
+Actions
+Wiki
+Security
+Insights
+Make HTMLSlotElement.assign() accept sequence #7321
+ Closed
+orstavik opened this issue 7 days ago · 32 comments
+ Closed
+Make HTMLSlotElement.assign() accept sequence
+#7321
+orstavik opened this issue 7 days ago · 32 comments
+Comments
+Assignees
+No one assigned
+Labels
+impacts documentation
+Milestone
+No milestone
+Linked pull requests
+Successfully merging a pull request may close this issue.
+
+None yet
+Notifications
+Customize
+You’re receiving notifications because you authored the thread.
+6 participants
+@WebReflection
+@domenic
+@annevk
+@bathos
+@orstavik
+@berrylover03
+@orstavik
+
+orstavik commented 7 days ago
+I propose to make the HTMLSlotElement.assign() method accept a sequence of nodes as its first argument, preferably as a polymorphic feature that coexists with the current variadic design.
+
+Background
+Previous discussion
+The spec defines the HTMLSlotElement.assign() method as a variadic function with Node parameters. Both Firefox and Chrome implement this behavior according to spec.
+MDN 11.9.2021 describes HTMLSlotElement.assign() as a function accepting one argument with a sequence of Nodes. (I think earlier implementations of Chrome also did this?)
+Many use-cases must pass a sequence of nodes to HTMLSlotElement.assign(). For example, if you build a web component for a custom <ol>, you will do something like this:
+
+slot.assign(...[...this.children].filter(el=>el.tagName === 'LI')) or
+slot.assign(...this.querySelectorAll(":scope > li")).
+The same goes for a custom variant of <tr>/<td>, <details>/..,<select>/<option>, etc. With the current spec, this requires either ... or reflection Function.apply(...).
+
+The current variadic HTMLSlotElement.assign(...nodes) method looks good for experienced JS developers and works well. The (old/MDN/sequence) version of HTMLSlotElement.assign([nodes]) also looked good and worked well.
+
+Why change?
+Here are my assumptions:
+
+There is a common sequence in which people learn the JS programming language. People commonly learn "more normal" JS syntax such as calling object methods and making literal arrays [] before "more advanced" JS syntax such as variadic functions and the ... rest operator.
+Many/some "more advanced" JS developers will use HTMLSlotElement.assign() and for them the difference between variadic parameters and a single sequence parameter is insignificant.
+But. Many/some "more normal" JS developers will also use HTMLSlotElement.assign() for whom the variadic parameters and/or rest operator will be unfamiliar and for whom this "more advanced" syntax can cause uncertainty, frustration and errors. Thus, for these "more normal" JS developers, there is a significant difference between the two alternative signatures.
+IMHO, the argument boils down to:
+
+What is actually the difference between variadic parameters and a sequence parameter? Is it only a matter of style (and taste and skill)? Or are there other deeper issues at stake? Performance? What about a second options argument in the future?
+How big will the group of "more normal" JS developers using HTMLSlotElement.assign be? Will users of HTMLSlotElement.assign() be 342 "more normal literal array guys" vs. 5 million "more advanced spread guys"? Or will 5 million users of HTMLSlotElement.assign() be uncomfortable with passing sequences to variadic functions using the spread operator?
+Suggestion for solution:
+I personally like the variadic API. I just think that the use of the spread operator should be voluntary for a platform function's main uses. One alternative approach that would accomplish voluntariness would be to make HTMLSlotElement.assign() polymorphic: iff the first argument is a sequence, then HTMLSlotElement.assign() would work as MDN describe, otherwise run as the spec describes. (illustrated in the below monkey patch).
+
+const desc = Object.getOwnPropertyDescriptor(HTMLSlotElement.prototype, "assign");
+const og = desc.value;
+desc.value = function assign(...args) {
+  typeof args[0][Symbol.iterator] === 'function' && (args = args[0]);
+  return og.call(this, ...args);
+}
+Object.defineProperty(HTMLSlotElement.prototype, 'assign', desc);
+@domenic
+
+Member
+domenic commented 7 days ago
+I don't think this is compelling; the spread operator is a fine language feature and something we designed around; there's no need to change APIs to make it "voluntary".
+
+We chose a variadic design because most cases benefit from a known selection of nodes being slotted in, with an array being the exception. For the exceptional case you can afford to type the extra three characters.
+
+@orstavik
+
+Author
+orstavik commented 7 days ago
+What is the (future) use-cases for HTMLSlotElement.assign()?
+And when we look at these use-cases, in how many of those use-cases do you have:
+
+individual variables for each node being slotted in (which is ideal for the variadic spread variant), or
+one variable pointing to a sequence of nodes (which is ideal for the MDN sequence variant)?
+To predict the future is difficult at best. But, I think we can make some educated guesses by looking to the past and analyze how the native HTML elements could work with HTMLSlotElement.assign():
+
+<ol> and <li> as I described above.
+<details> and <summary> and the rest.
+<table>, <tr>, <td>.
+<select> and <option>.
+In each of the four use-cases above you would need to "slot in" a sequence. This sequence is in all cases a filtered list of this.childNodes or this.children. They resemble the "default" <slot> with no name attribute.
+
+One can make this list in many different ways, but common to all is that one never has an individual variable to each node; one always has a variable pointing to a sequence of nodes. Below is an example of how these native element use-cases can be met (pseudo code):
+
+slot.assign(...this.querySelectorAll(":scope > li"))
+const sum = this.childNodes.findIndex(n => n.tagName === "SUMMARY");
+detailsBodySlot.assign(...[...this.childNodes].splice(sum, 1))
+rowSlot.assign(...this.querySelectorAll(":scope > li"))
+optionSlot.assign(...[...this.children].filter(el=>el.tagName === "OPTION"))
+In these wrapper elements are also some individual node variables being slotted such as <lh> and <caption>. Which also would require .assign(). So I am not arguing one over the other, I am saying that both 1) "variables pointing to individual nodes" and 2) "one variable with a sequence of nodes" are main use cases for .assign(). Thus, if we look at the native elements as a guide of basic needs from HTML element, my guess is that one variable pointing to a sequence will make up half the uses for HTMLSlotElement.assign(). I hope you don't take exception to my exception of you trying to make the native elements into an "exception" ;)
+
+@orstavik
+
+Author
+orstavik commented 7 days ago
+On language and syntax. My point is not a general assessment of the spread operator. That's fine! I even find it elegant... and functional... And I am sure that most JS experts in this forum feels the same way :)
+
+My point is: is the spread operator "fine" for the beginner? Is average Joe JS developer comfortable with it? Will he use it? will he understand it when he uses it? And if not, will it cause poor Joe unnecessary frustration? will it cause bugs? will it make Joe give up on his first attempts to make web components, quit JS, and thereby rob the world of that 100th version of that same web component that would have sequestered carbon?
+
+I think there is a proverb that says something along the lines of 'idiots make systems for experts - experts make systems for idiots'. I don't know if a variadic HTMLSlotElement.assign() is for experts, or should be, but it feels a little bit "too clever" when one must use the spread operator with it.
+
+@bathos
+
+bathos commented 6 days ago
+Is there evidence that spread is a major point of confusion or particularly advanced? When I've worked with / helped train new JS devs, it's not stood out as a pitfall - if anything it seems like one of the bits folks pick up on their own.
+
+@annevk annevk added the impacts documentation label 6 days ago
+@annevk
+
+Member
+annevk commented 6 days ago
+Spread also matches precedent in the DOM Standard for APIs such as append(), prepend(), etc.
+
+We should just update the documentation.
+
+cc @whatwg/documentation
+
+@orstavik
+
+Author
+orstavik commented 6 days ago
+Thank you both for pointing out a) the need for evidence and b) that append() and prepend() also uses the spread operator!
+
+append() vs. assign()
+The append() is an excellent reference. append() and assign() do similar tasks. But... There is a slight difference between how append() play with the spread operator and how assign() does it. append() simply pushes a node to a list; assign() overwrites the list. This means that with append(), you can do this:
+
+for (let node of sequenceOfNodes)
+  element.append(node);
+while if you try the same with assign(), you assign only the last node:
+
+for (let node of sequenceOfNodes)
+  slot.assign(node);
+The consequence is that the use of the spread operator is voluntary with append(), and mandatory with assign().
+
+evidence
+If anyone was in doubt, I have no evidence! :) I only have anecdotes and a hunch that the mandatory use of spread operator might cause more confusion than we might think. The question is: does anyone have any evidence? Does anyone have any data that says something about which syntax is more or less difficult for the average users of an API function?
+
+And. I think that the burden of evidence is on the other party here. Can anyone point to any other API method/function related to the DOM that require the use of spread operator? (The precedence for voluntary use of the spread operator with DOM methods being excellently established by the append()).
+
+If there is no precedence for requiring the use of the spread operator of JS developers working with the DOM, then it would be good if the developers adding that requirement of all the other developers could either a) explain why we must/should/benefit from adding this requirement or b) could point to some evidence why "it's fine" for average Joe/beginners.
+
+@annevk
+
+Member
+annevk commented 6 days ago
+To be clear, the DOM Standard also uses this for replaceChildren(), which works similarly to assign(). I don't think that argument is really applicable.
+
+We also cannot take away the use of the spread operator at this point as this feature has shipped in multiple implementations iirc.
+
+@bathos
+
+bathos commented 6 days ago •
+Can anyone point to any other API method/function related to the DOM that require the use of spread operator?
+
+Not sure if there are more related to the DOM, but it may be worth noting that JS itself, all platform APIs aside, includes variadic functions out of the box, e.g. String.fromCodePoint. Some of these, like Math.min / Math.max, would tend to be pretty inconvenient without spreading. Template tags are inherently variadic, too.
+
+(Perhaps it's because I didn't learn JS until the ES2015+ era, but ... seems like a core language feature to me, and I'd guess - without much evidence - that most new JS devs encounter it within their first two weeks.)
+
+@orstavik
+
+Author
+orstavik commented 6 days ago
+replaceChildren() and Math.min are other excellent examples. Thanks:)
+
+But. They still pass the voluntary test, no? The use of replaceChildren() can be replaced by other DOM methods, (remove() and append()). So while replaceChildren() do require the use of the spread operator when working with a sequence variable, the use of the method is still voluntary for all usecases, no?
+
+And. This same voluntary test can be applied to Math.min and Math.max (and Object.assign())?
+
+let min = numbers[0];
+for (let n of numbers)
+  min = Math.min(min, n);
+That is not the case with assign() and a sequence... Here spread is mandatory in order to solve important use cases.
+
+@annevk
+
+Member
+annevk commented 6 days ago
+No, if you use remove() and append() you get very different mutation records. Some side-effecting stuff might also be different, though that's poorly defined at the moment.
+
+@domenic
+
+Member
+domenic commented 6 days ago
+It's also worth noting that the "voluntary test" is something you created, and not part of how we design APIs. We instead prefer values like consistency.
+
+@orstavik
+
+Author
+orstavik commented 6 days ago •
+Hehe, I am not exactly reassured by hearing that the replaceChildren() creates a unique set of mutation records and sequence of connectedCallback()s and disconnectedCallback()s(?) that cannot be replicated using remove() and append()... :) I see the argument being made, and I agree that such side-effects might caution developers from replacing replaceChildren() with append() and remove(), in complex systems. But I don't think that they are enough to require developers not to build their functions using append() and remove(), in all but super technical, advanced edge cases. If so, that is another issue concerning replaceChildren() :)
+
+Consistency is precisely my issue, thanks:) If all other uses of the DOM do not require the use of the spread operator, then the HTMLSlotElement.assign() is inconsistent when it demands the spread operator. The thing that struck me when I needed to game out how the new version HTMLSlotElement.assign() worked without documentation (as MDN was wrong), was "wow! that is inconsistent".
+
+My argument is that we should keep consistency in what is being required knowledge of developers. And that when all else is being equal, we should keep "required knowledge" as low as possible considering those less fortunate.
+
+@annevk
+
+Member
+annevk commented 6 days ago •
+I'm not sure what to tell you, but insert, remove, and replace all children, are all important primitives of node trees. You are welcome to disagree, but that won't change the facts.
+
+As is insertion of a DocumentFragment btw, which is another reason why append() with multiple arguments is different from multiple invocations.
+
+@orstavik
+
+Author
+orstavik commented 6 days ago •
+Thanks! And no, I didn't know that replace X with Y was considered a primitive. And just to make sure that I understand you correctly: by "primitive" you mean that the operation to replace X with Y is considered a different concept than/non-replaceable with the combined operation first remove Y, then insert X, right? Hm.. maybe the primitive nature of replaceChildren() is another issue? I think that for the purposes of this discussion, the two alternatives can be interchanged often enough not to make replaceChildren() be considered mandatory. IMHO.
+
+And again... sorry... the DocumentFragment.append() still passes the voluntary test as it pushes to, not overwrites its target. As described above.
+
+for(let n of nodes)
+  this.shadowRoot.append(n);
+However. You are unsure of what you can tell me. So I should maybe be more direct in what response I would like from whatwg representatives on this issue:
+
+What other (non-super-technical, non-edgy) use-cases for DOM manipulation require the JS developer to use the spread operator?
+Are there any non-stylistic reasons to choose variadic over a single sequence (as described by MDN)? Is it only ... vs []?
+If there are no other such use-cases, do the whatwg consider adding this requirement breaking with tradition/inconsistent with previous developer requirements?
+And if this is adding a new developer requirement, what data/arguments/considerations did/do the whatwg base this decision on?
+@orstavik
+
+Author
+orstavik commented 6 days ago
+But I would like to make one request. Can some insiders from whatwg try to argue both sides of this issue? I feel that the discussion has taken on an outsider vs. insiders dynamic, and I am not sure if that is helpful for the issue... I make this request based on my assumption that if assign() is (inadvertently) adding a new "skill requirement" of DOM developers, then it is worth our time to check it out.
+
+@bathos
+
+bathos commented 6 days ago •
+Are there any non-stylistic reasons to choose variadic over a single sequence
+This may have an answer in an earlier comment:
+
+We chose a variadic design because most cases benefit from a known selection of nodes being slotted in, with an array being the exception. For the exceptional case you can afford to type the extra three characters.
+
+(I.E. optimizing for cases like assign(one) and assign(one, two) over cases where the count is arbitrary.)
+
+insiders from WHATWG [..]
+
+FWIW, not everybody in the convo is WHATWG - I'm a fellow non-WHATWG web dev who's interested in standards. I hope the discussion hasn't seemed alienating. It can be tricky when an argument being presented fundamentally rests on a belief - in this case, something like "spread isn't an ordinary, everyday part of js" - which other folks likely don't share.
+
+what data/arguments/considerations did/do the whatwg base this decision on?
+
+As far as I'm aware, WHATWG doesn't relitigate / issue secondary verdicts on new JS syntax after TC39 standardizes it. The closest it gets is probably that leveraging some features can imply updates to Web IDL and this in turn might mean constraining them in some manner.
+
+@orstavik
+
+Author
+orstavik commented 5 days ago
+We chose a variadic design because most cases benefit from a known selection of nodes being slotted in, with an array being the exception. For the exceptional case you can afford to type the extra three characters.
+
+(I.E. optimizing for cases like assign(one) and assign(one, two) over cases where the count is arbitrary.)
+
+Ok. Describing use-cases for the imperative slotting API part 2.
+
+In 99% of the use-cases where you in "automatic" slotting mode would use the default <slot>, you would in "manual" mode use some version of:
+
+slot.assign(...[...this.childNodes].filter(some=>thing));
+//or
+slot.assign(...this.querySelectorAll(":scope > li"));
+This is the listOf-<li>-slot use case. Here, you will have one variable/source (this.childNodes or this.querySelectorAll), and that one variable will be a list.
+
+In the use-cases where you in "automatic" mode would use <slot name="something">, you most likely will have one variable/source pointing to one node:
+
+slot.assign(this.children[0]);
+//or
+slot.assign(this.querySelector(":scope > lh"));
+This is the <lh>-slot use case. I am having difficulty imagining good scenarios where you would have two variables/sources, ie. assign(one, two). And I can't think of any native element that has such a conceptual structure. But, there is nothing wrong making room for one, two. But tailoring the API for it, that I don't think wise.
+
+Now, ask yourself, if somebody put a gun to your head and said: "you have to choose between default <slot> and <slot name> and you can only have one!" Which one would you choose? It's not even close. The default <slot> is your favorite child! <slot name> is a) ugly and b) useless and c) when you look at her, she somehow seems to make you think about that eager colleague of your wife. Anyone spending 5 minutes in a room with both kids will feel the same way.
+
+The problem is that the earlier comment you are referring to holds the use-cases in reverse priority. "most cases" refers to the imperative equivalent of <slot name> and <lh>-slot; "the exceptional case" is the imperative equivalent of default <slot> and listOf-<li>-slot. <slot name> is named the favorite. Use-case-wise, and metaphorically speaking, it's the man with the gun saying "we are going to shoot our favorite child." ;)
+
+But. I don't know. I am not sure that the real issue here is the use cases. First, I am an optimist. I interpret the silence from the other participants on the topic of use case prevalence as "silently not-disagreeing anymore". But, second, I think the main problem lies elsewhere, namely in the structure of HTMLSlotElement.assign() and the specific variadic pattern that it implements and now also builds precedent for.
+
+@orstavik
+
+Author
+orstavik commented 4 days ago
+As far as I'm aware, WHATWG doesn't relitigate / issue secondary verdicts on new JS syntax after TC39 standardizes it.
+
+What I am relitigating here, is not the use of spread. I heart spread... I am relitigating HTMLSlotElement.assign() because it makes a brand new policy shift from a) encouraging/asking to b) requiring/demanding that the developer use spread. Why relitigate? What is at stake? Can we save HTMLSlotElement.assign() after it has been shipped? Maybe. Should we? Maybe. But, what we definitively can save is precedent.
+
+The real question here is what does assign() actually do? How come assign() demands the use of spread when 99% of the other variadic functions such as append(), [].push(), Object.assign(), Math.min() don't? Sure, a decision and code was made that turned out this way, but the code must be doing something to enact this difference. What? How does assign() actually manage to throw "voluntariness" out the window? After all, none of the other variadic functions even touched it. What is HTMLSlotElement.assign() doing differently than all the other variadic functions in the browser to manage to create this brand new external requirement?
+
+I state that HTMLSlotElement.assign() is using a bad variadic pattern. Inside the variadic function it makes state changes outside the loop. Because of this behavior, assign() must call the variadic function only once for the whole list, and therefore the developer must use the spread operator/apply when invoking it on a sequence. That is a variadic anti-pattern.
+
+A correct implementation of the variadic pattern would do no state changes outside the inner iteration. append(). Math.min()... A correct implementation of the variadic pattern would therefore produce the exact same result if the iteration is done outside or inside the variadic function. Therefore, the variadic function can be both called and applyed. The developer can choose. And the thing that makes the variadic function pretty is the conceptual elegance and soundness that follow from both the pure loop and the duality of call/apply. A variadic function is not just about how you pass arguments into the function; the variadic pattern is to obtain consistency through restricting state changes outside the loop which then also affords freedom of choice.
+
+Functions that behave like HTMLSlotElement.assign() and replaceChildren(), ie. do some statechanges first, iterate over a single sequence, do some work after, and then return, they are normal fixed-length-parameter function with a single parameter with a sequence. By giving them a variadic signature they are just presented as more elegant than they really are. They are primitive, not variadic. It is false advertising.
+
+So, even if we make the awful assumptions that we don't care about developer's freedom of choice and the misguided assumption that <slot name> is the golden child and say that the similar behavior in replaceChildren() gives assign() precedent, even then assign is still wrong. It is an anti-pattern, we should fix both assign() and replaceChildren(), and there is no precedent for doing it in future functions.
+
+@WebReflection
+
+Contributor
+WebReflection commented 4 days ago •
+So, even if we make the awful assumptions that we don't care about developer's freedom of choice ...
+
+Imho, primitives are there to serve a purpose, and consistency is, rightly so, a priority.
+
+The freedom we all have with JS is that this whole debate can be solved via:
+
+const assign = (slot, sequence) => slot.assign(...sequence);
+and new comers are just developers that need to learn more JS, not people to accommodate with their lack of knowledge forever.
+
+There is Array.prototype.splice that works exactly the same, after the second parameter, and it substitutes too:
+
+const arr = [1, 2, 3];
+
+// this works "like assign"
+arr.splice(0, arr.length, ...[4, 5, 6]);
+
+// this doesn't do the same at all
+arr.splice(0, arr.length, [4, 5, 6]);
+plus replaceChildren and many others ... the consistency is that whenever no extra arguments are needed, JS / DOM developers are used to spread these days, and transpilers are the only one keeping .apply(...) around.
+
+I understand the documentation gotcha, and indeed that should be fixed, but I wouldn't consider the current variadic signature an issue, quite the opposite, it reasons well with all others.
+
+@orstavik
+
+Author
+orstavik commented 4 days ago
+There is Array.prototype.splice that works exactly the same
+
+splice()! Thank you for bringing it up, it is really relevant, in several ways:) But... And I (honestly) hate being the guy that is the stickler for details... splice() also passes the "can it be called"/"voluntary spread" test faced with a sequence. It is one of the 99%. If I am not mistaken... Here is how:
+
+const sequence = [1,2,3];
+const deleteCount = 1;
+const position = 1;
+const target1 = [1,2,3];
+const target2 = [1,2,3];
+const target3 = [1,2,3];
+
+//nice `apply` way
+target1.splice(position, deleteCount, ...sequence);
+
+//the verbose literal, `call` way to expose the conceptual variadic inner loop of splice
+for (let i = 0; i < sequence.length; i++) {
+  if(i === 0){
+    target2.splice(position, deleteCount);
+  } else {
+    target2.splice(position, 0);
+  }
+  target2.splice(position + i, 0, sequence[i]);
+}
+
+//the more normal `call` way to get the same output, that would also be a more likely way to implement `splice()`
+target3.splice(position, deleteCount);
+for (let i = 0; i < sequence.length; i++)
+  target3.splice(position + i, 0, sequence[i]);
+console.log(target1, target2, target3);
+What can we learn from splice()? Well, first that we can combine a fixed length "head" with a variadic tail and still pass the "can it be called" test. Second, that this kind of mutation on another list, ie. the this-array used inside the splice() function, do complicate matters. Mutation adds complexity, no surprise. Third, even when it is not pure mutation wise, it can still be "pure" variadic wise (ie. pass the "can it be called" test).
+
+And. The second parameter deleteCount is problematic. The if(i===0) test enables us to make the iteration pure, yes. We can extrapolate the variadic loop, yes. But it makes people understand it "the more normal way". I did too. The "iteration settings" paramters position and deleteCount make the variadic function seem more primitive than it conceptually is.
+
+I do not think splice() is (that) bad. My guess is that the second argument is a good compromise between enabling efficiency deep down while not breaking the "every native JS function should be callable" principle. I personally think splice() benefits from having a variadic interface, because it rightfully hints at the internal loop purity, however complicated the iteration algorithm is. But, I like variadic functions that have as few as possible "iteration settings" parameters at beginning (ie. position and deleteCount). And so, if all else is equal, I think the goal should be to try to avoid them.
+
+So. There is something even stranger with assign than even the strange splice(). We have many variadic functions in the platform, some of which are very strange and complex, but they still pass the "can it be called" test. HTMLSlotElement.assign() (and we can include replaceChildren() here too, if one really wants to) seem still to be the only ones that cannot be called.
+
+@WebReflection
+
+Contributor
+WebReflection commented 4 days ago •
+I have used splice just as the closest example to [...] literals, so that [...].splice(s, e, [...]) would fail.
+
+Asking for an API that brand check if the first argument is iterable, makes list of iterables "impossible to deal with", so it's also bad as generic signature ... and sticking with [...], we have already concat which does that mistake, 'cause I am sure if it was proposed in 2021 it would've been just variadic, without the surprise concat brings today, used to flatten out as side-effect.
+
+[...].concat(a, ...b, c) this is how concat would be a better API, imho, and the very same reason I think having dual behavior based on length and "iterability" is a bad precedent for the specs itself or, something we should run away from, instead of making APIs more ambiguous than these should be.
+
+@berrylover03
+
+berrylover03 commented 4 days ago
+Just learning
+
+@orstavik
+
+Author
+orstavik commented 4 days ago •
+and sticking with [...], we have already concat which does that mistake, 'cause I am sure if it was proposed in 2021 it would've been just variadic, without the surprise concat brings today, used to flatten out as side-effect.
+
+Yes, the concat(array) is a good example of the "normal" call-function with one sequence parameter that I am talking about. And yes, in 2021, when there are so many other variadic functions flying around (push()), it is surprising that concat() is not variadic. Nice point! And you are also bringing up the "to flatten, or not to flatten"-question that immediately makes me think of another potential variadic candidate Array.flat() which definitively has a different iteration algorithm.
+
+Actually, you are bringing up the flatten problem from two different angles.. The "impossible to deal with" feedback on the polymorphic alternative has to do with flattening too, no? And your critique here resonates with me too: I too feel that if you have a variadic function, and that function iterates recursively into nested sequences (as flat() does, and as my polymorphic alternative assign() does), then that is such a weird iteration that maybe the variadic function shouldn't have any other purposes. That would mean that a variadic flat() would be ok, while a polymorphic assign() accepting both sequences and individual nodes would be "too much"/"impossible to deal with". But.. And this is just me thinking out loud here. I don't know if this feeling is unease (ie. me not having learned to expect that behavior yet), or if the bad feeling would remain as "too complex" after I have learned it. And.. That might actually not be the case. All web developers should be more than capable of imagining a 2d acyclic graph with uniform nodes with ease. My argument is not that we should make such a variadic function in 2021, only that maybe such variadic functions will be more common in say 2030 than they are today.
+
+[...].concat(a, ...b, c) this is how concat would be a better API, imho, and the very same reason I think having dual behavior based on length and "iterability" is a bad precedent for the specs itself or, something we should run away from, instead of making APIs more ambiguous then these should be.
+
+Agree. A variadic concat() would correctly signal that concat() is a function that has a pure iteration wrapped around an small operation that is performed equally at all fixed points in the iteration. If you want, you can extrapolate this simple iteration outside and call concat() on the individual elements in the sequence, one by one. A variadic concat() should easily pass the "can it be called?" test. The problem is that this is not possible due to legacy.
+
+@WebReflection
+
+Contributor
+WebReflection commented 4 days ago •
+flat has a reason to exist with its algorithm, and it was mostly shaped out of concat hacks used here and there ... it's concat that's weird and footgun prone as it is, so if you agree concat is not fixable due legacy, and it would be better as pure variadic, then you should also agree your proposal is a no-go for the future of any modern API?
+
+also consider the previously mentioned fragment scenario, which also adds potentially already unexpected behavior in the mix, because it can contain various nodes in between, even as single non-sequence entry.
+
+As summary: brand check for iterable arguments are not the way to go. Slower, proven legacy mistake in JS, promote ambiguous cases/scenarios, instead of promoting more pure signatures. I am not sure we're moving forward, but I am sure the more examples we talk about, the more this proposal looks undesired, not just not-so-compelling.
+
+@orstavik
+
+Author
+orstavik commented 4 days ago •
+Ahh. I see the misunderstanding. And I am sorry, it is my fault. If I could start from scratch, I also would prefer a variadic version of HTMLSlotElement.assign(): a good, real variadic .assign(). And, yes, many such good variadic alternatives exists. The reason I have proposed the "variadic function to normal function"- change, is that I, at the beginning of this discussion, thought that it would be the least bad approach to fix the current bad, not-really-variadic HTMLSlotElement.assign() just shipped. But, I also prefer a true variadic version. For example:
+
+//good variadic `assign()`/`unAssign()`, echoes `.append()` and `.removeChild()`
+class HTMLSlotElement {
+  assign(...nodes) {
+    for (let n of nodes) {
+      this.#listOfAssigned.push(n);
+      n.#assignedSlot = this;
+    }
+  }
+
+  unAssign(...nodes){
+    for (let n of nodes) {
+      const pos = this.#listOfAssigned.indexOf(n);
+      if(pos === -1) throw new Error("probably shouldn't just ignore this");
+      this.#listOfAssigned.splice(pos, 1);
+      delete n.#assignedSlot;
+    }
+  }
+
+  replaceAssignedNodesPrimitive(newNodes){
+    this.unAssign(...this.#listOfAssigned);
+    this.assign(...newNodes);
+  }
+}
+
+//then, inside the function that reacts to slottable children changes, you could do the following
+class WebComponent extends HTMLElement {
+  #slot1;
+  #slot2;
+  //bla bla bla
+
+  callbackWhenYouNeedToCheckAndAssignChildNodesFromTheHostNode(){
+    this.#slot1.unAssign(...this.#slot1.assignedNodes());
+    this.#slot2.unAssign(...this.#slot2.assignedNodes());
+    const lhs = [...this.children].filter(n => n.tagName === 'LH');
+    const lis = [...this.children].filter(n => n.tagName === 'LI');
+    this.#slot1.assign(...lhs);
+    this.#slot2.assign(...lis);
+  }
+}
+And. About the initial proposal that you call "Brand check" and that I call polymorphic. I am not hung up on that. I propose one way to solve the bad variadic .assign() just shipped. I sincerely hope something better comes along:) There are probably many alternative solutions that can be good for all of us, both in the short and long run.
+
+@orstavik
+
+Author
+orstavik commented 4 days ago •
+I should also probably explain how this good .assign() and the current bad .assign() differs.
+
+First, the obvious:
+
+both assign() have a variadic function signature.
+the good assign() doesn't remove the previously assigned nodes, and therefore require a variadic brother unAssign().
+In the new good HTMLSlotElement, a third method replacedAssignedNodesPrimitive() is added. This method mirror the current, bad assign().
+Then, the "can it be called?" test of the good variadic pattern.
+
+callbackWhenYouNeedToCheckAndAssignChildNodesFromTheHostNode() {
+  for (let n of this.#slot1.assignedNodes())
+    this.#slot1.unAssign(n);
+  const lis = [...this.children].filter(n => n.tagName === 'LI');
+  for (let n of lis)
+    this.#slot2.assign(n);
+}
+Why does the bad .assign() fail the "can it be always called" test?
+
+Before the bad .assign() iterates, it does a state mutation on the list of assigned nodes in the slot, a.o.
+This means that if you try to extrapolate the loop and add the new nodes one by one, then the bad assign() will at each step remove the new node that was added just previously.
+And then things start to get problematic..
+
+Because the HTMLSlotElement.assign() currently must unAssign all, and
+faced with the, I dare say, exceptionally important use case where you need to call assign() with variable length list you make from this.childNodes or this.querySelectorAll(), and
+only because assign() chose this particular quasi-variadic pattern (not true variadic), then
+the developer is forced into a corner where the only way to invoke this function is the apply way.
+This "corner" (ie. you must use apply) is unique in JS (and I say that because I think its too edgy to use the bugs that arise when you try to replace replaceChildren() with a combination of remove() and append() as precedent). It's a first. It breaks with history. It takes away the developers ability to choose to apply or call. It is inconsistent.
+
+And, as the "good" variadic examples shows, it is completely unnecessary.
+
+@orstavik
+
+Author
+orstavik commented 3 days ago •
+Why consistency[0] === "freedom of choice"?
+If the whatwg were starting with a blank slate of paper for HTMLSlotElement.assign(), they could create a new internally consistent system six ways from Sunday. Fine! They would have no developers to answer to. No established rules to comply with. They could decide freely what makes most sense, what is most consistent.
+
+But, this is obviously not what consistency means here. JS has a rich history and lots of legacy to protect. The paper is not blank, the paper is filled with let's say ~1000 functions. So when whatwg is making function ~1001, then this function's API/signature, behavior, requirements of the run-time, and requirements of its developer users should be consistent with that of the ~1000 functions that came before it and that will co-exist alongside it. Let's agree to agree: consistency is king!.
+
+So, is slot.assign() breaking consistency? Is it using a unique, unprecedented variadic pattern?
+
+The discussion so far has mostly been about precedent for true-variadic functions. And this has been established. There are ~100 examples of good true-variadic functions in the browser. They are needed and wanted. By experts and beginners. Let's agree to agree # 2: good variadic functions are ok.
+
+But. This is not the issue with .assign(). The issue isn't variadic signature. It isn't spread. The issue is that .assign() a) is the only means to solve important use-cases (ie. primitive) and b) doesn't pass the "can it always be called"-test ("voluntariness").
+
+Is there precedent for:
+
+a) Yes. Lots! Many functions are primitives, especially in the DOM: addEventListener(), append()++. Let's say there are ~666 such primitive functions in JS. No problem. Let's agree to agree # 3: primitive functions are ok.
+
+b) Does 1 count? replaceChildren() also doesn't pass the "can it always be called"-test. So, we have ~99 true-variadic functions vs. 2 quasi-variadic. We have ~999 functions we can always call&apply vs. 2 functions we can apply&call-but-not-call-with-lists.
+
+a) and b) together? No. The only counter-argument here is that if you replace replaceChildren() with remove() and append(), there will be some difference in the mutation records and callback sequence/context. But. This doesn't mean that you cannot solve the same use-cases using call, only that you get different side-effects when you use different functions to achieve the same use-case. So, a "no".
+
+Conclusion:
+Precedent on:
+
+"you can not call a function on a list"? 2 of ~1001 ?!
+"you can not solve your use-case with call"? 1 of ~1001 ?!?!
+Why? Why did the ~999 other native JS functions go the other way? What is it with this pattern? What will its consequences be? Maybe it's good even? Maybe we should add more, maybe ~200 of ~1001 functions should be "not callable with lists"? Maybe we can just forget-about-it, trust whatwg when they say that it is "fine" to make non-callable functions, and go back to sleep? No one is relitigating spread, or primitives, or good variadic functions, or whatever. The poor guy that is being taken behind the court house and shot for no apparent reason is not me, it's "all functions are always callable in JS".
+
+This is a serious bug rapport. Please whatwg, take it seriously. Please, if there are others reading this that see the importance of the callable principle, please speak up. HTMLSlotElement.assign() has just been shipped. But MDN still documents it as if it were a callable function. And it is not yet supported in all browsers. The clock is ticking guys...
+
+@annevk
+
+Member
+annevk commented yesterday
+Let's be clear, we cannot change the existing API shape. It has shipped. If you find traction for your argument with TC39, it might be worth revisiting this to some extent, but that seems unlikely to me. It's also clearly not a 1000 vs 1. There's many functions for which apply would be easier to use than call.
+
+I created mdn/content#10533 to get the documentation fixed.
+
+@annevk annevk closed this yesterday
+@orstavik
+
+Author
+orstavik commented 4 hours ago
+Arguing the point seems pointless :) So instead I spent the weekend analyzing the problem and explaining it in a tutorial.
+Fwiw.
+
+And, and this is just for the record.
+
+"There's many functions for which apply would be easier to use than call." (my emphasis).
+
+I 100% agree.
+
+"There's many functions for which apply would be the only way to use it and where you cannot call it." (my issue)
+
+Nope. 2 of ~1001. Afaik / shown in this discussion. So here I 999/1001 disagree.
+
+@annevk
+
+Member
+annevk commented 4 hours ago
+That's only correct if you pretend that (DOM) obj.append(a1, a2) is equivalent to obj.append(a1); obj.append(a2), right?
+
+@orstavik
+
+Author
+orstavik commented 1 hour ago
+Yes. You got me! That is EXACTLY what I'm pretending :)
+
+I will go even further and say that untill this morning I still 100% believed that obj.append(a1, a2) === obj.append(a1); obj.append(a2). Even after thinking about this issue for one week and seriously checking my assumptions so as to avoid embarrassing myself. It stuck that deep with me actually. The more I learned about variadic functions, the more clear it seemed. I can also confess that I also still believe 100% that array.push(1,2) === array.push(1); array.push(2). And that 1+1===2. Although I think I have adjusted that belief to around ~99,76% because a little (F)UD has just come my way :)
+
+If you want, please let this issue and me personally be the anecdotal evidence that at least one obviously stupid guy exists that a) made this inference and b) were unable to shake it, even after being shown contradictory examples and while checking his assumptions for fear of embarrassment. No problem, I volunteer :D
+
+But, what I am trying to get an answer to is why this should not be considered a "wat?!"?
+
+Ok. You show me 666 white swans. Then you ask me, what color has swan 667? I say white. You say nope. Not exactly. It is only all white when you look at it normally, superficially. You see, if you lift the wing of swan 667 (and swans 668-672 btw), then you will see that we have painted the feathers on the underside of the wing in a slightly greyish color by making a slightly different MutationRecord and calling the connectedCallback() against a DOM that looks different (not your words, but my current understanding). When you then ask me what color swan 673 will have, you can literally see the rainbow in my brain shine through my eyes.
+
+However, even if we accept this as a "good pattern", which I don't, even then assign() still sticks out like a sore thumb. Here is why.
+
+First. Let's say that there are 5-10 other variadic DOM methods like append() that produce a different MutationRecord /callback-context side-effects. Let's say that these variadic methods produce an output that on the surface looks the same (ie. the dom looks the same afterwards in both cases). In JSish, we can say it is like obj.append(a1, a2) == obj.append(a1); obj.append(a2), but that obj.append(a1, a2) !== obj.append(a1); obj.append(a2) (gotta love the == !== ===, or wat? :). So, superficial equality with the same method.
+
+Second, we have ugly duckling replaceChildren(a,b). replaceChildren(a,b) != replaceChildren(a);replaceChildren(b). No simple superficial equality. But you can compose a superficial equality by replaceChildren(a,b) == remove();append(a);append(b). So you can call your way out of that use-case without too much brain gymnastics.
+
+Third, assign() is different than all others still. Because assing(a,b) != WAT?!. There is no call thing you can put on the other side to superficially solve your use case the same way. This use-case must apply. That is a black swan.
+
+There seems to be no obvious reason to make assign() this way. I'm not saying that there arn't, I just havn't heard any yet. And I can't for the life of me think of any. And when others can't answer this question too, because the suggestion that it is "optimizing" for the main use-case of assign(el1,el2) and that assign(nodes) is exceptional, is simply incorrect. Default <slot> you need assign(nodes).
+
+I really can't understand: what needs to happen behind the scenes/or in the anticipated use-cases that makes designing assign() this way good? And I can't for the life of me understand why nobody seems to understand why the rule "all JS functions can always be both called and applyed" is a) already here and b) good to keep around? Wat am I not getting here? :)
+
+@orstavik
+
+Author
+orstavik commented 30 minutes ago •
+I personally believe that the burden of justification should be on the other side of this argument. I think that the change that you are proposing is something like this:
+
+"""
+Before slot.assign() the platform has provided API that lets its users solve all use-cases using only call syntax/form when invoking functions. Before assign() 995 functions could be called and applyed interchangeably, 5-10 functions could be called and applyed to produce the same superficial outcome, and only 1 function could not be called, but only applyed, but that function could be replaced by two other functions that you could call to solve your use-case.
+
+Now, we would like to change that. We like the new apply/... syntax for invoking functions, because x), y) z).
+
+Therefore, we are proposing that from now on we are going to produce API functions to solve future use-cases where you must use the apply/... way.
+
+Yes, there are variations around these functions that would allow for both apply and call, but we think that these variations are worse than the apply only approach because of a), b), c).
+
+Here is our justification for breaking "JS functions can always be called", do you have any counter arguments?
+"""
+
+@orstavik
+
+
+
+Leave a comment
+No file chosen
+Attach files by dragging & dropping, selecting or pasting them.
+Remember, contributions to this repository should follow its contributing guidelines.
+© 2021 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Docs
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About

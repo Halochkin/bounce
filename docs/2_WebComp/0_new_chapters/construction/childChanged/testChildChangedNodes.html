@@ -1,0 +1,52 @@
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
+<script src="ChildChangedCallback.js"></script>
+
+<script>
+
+  function recordToArray(rec) {
+    return [
+      ["new", rec.now?.map(n => n.nodeName)],
+      ["old", rec.old?.map(n => n.nodeName)],
+      ["added", rec.added?.map(n => n.nodeName)],
+      ["removed", rec.removed?.map(n => n.nodeName)]
+    ];
+  }
+
+  class WebcompA extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: "open"});
+      this.shadowRoot.innerHTML = `<slot></slot>`;
+    }
+
+    childChangedCallback(rec) {
+      console.log(this.tagName, ...recordToArray(rec));
+    }
+  }
+
+  class WebcompB extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: "open"});
+      this.shadowRoot.innerHTML = `<slot></slot>`;
+    }
+
+    childChangedCallback(rec) {
+      console.log(this.tagName, ...recordToArray(rec));
+    }
+  }
+
+  customElements.define("webcomp-a", WebcompA);
+  customElements.define("webcomp-b", WebcompB);
+
+  setTimeout(() => {
+    const compA = document.querySelector("webcomp-a");
+    const compB = document.querySelector("webcomp-b");
+    compA.removeChild(compB)
+  }, 100);
+
+</script>
+
+<webcomp-a>
+  <webcomp-b></webcomp-b>
+</webcomp-a>

@@ -1,0 +1,38 @@
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
+<script src="../MonkeyPatch/MonkeyPatch.js"></script>
+<script src="readyCallbacks.js"></script>
+<script>
+  class Bob extends HTMLElement {
+    constructor() {
+      super();
+      console.log("constructor");
+    }
+
+    attributeReadyCallback() {
+      console.log("ARcb");
+    }
+
+    attributeChangedCallback() {
+      console.log("accb");
+    }
+
+    connectedCallback() {
+      console.log("ccb");
+    }
+
+    childReadyCallback() {
+      console.log("CCcb");
+    }
+
+    static get observedAttributes() {
+      return ['a'];
+    }
+  }
+
+  customElements.define("b-b", Bob);
+</script>
+<b-b a>hello world</b-b>
+<b-b>hello world</b-b>
+<script>
+  const x = document.createElement('b-b');
+</script>

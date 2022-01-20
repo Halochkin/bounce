@@ -1,0 +1,43 @@
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
+<script src="ChildChangedCallback.js"></script>
+
+<script>
+
+  window.addEventListener("error", e => console.log(e.type))
+
+  class WebcompA extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: "open"});
+      this.shadowRoot.innerHTML = `<slot></slot>`;
+    }
+
+    childChangedCallback(nodes) {
+      console.log(this.tagName + " childChanged");
+      console.log(nodes.now.map(n => n.nodeName));
+      throw new Error("test-error-1");
+    }
+  }
+
+  class WebcompB extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: "open"});
+      this.shadowRoot.innerHTML = `<slot></slot>`;
+    }
+
+    childChangedCallback(nodes) {
+      console.log(this.tagName + " childChanged");
+      console.log(nodes.now.map(n => n.nodeName));
+      throw new Error("test-error-2");
+    }
+  }
+
+  customElements.define("webcomp-a", WebcompA);
+  customElements.define("webcomp-b", WebcompB);
+
+</script>
+
+<webcomp-a>
+  <webcomp-b></webcomp-b>
+</webcomp-a>

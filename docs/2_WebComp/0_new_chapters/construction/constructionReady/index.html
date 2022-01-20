@@ -1,0 +1,109 @@
+<h3>attributeReadyCallback and childReadyCallback</h3>
+<test-html test="../constructionReady/test1.html">
+  <script expected>
+    [
+      "/1: constructor",
+      "1/1: attributeReady",
+      "1/1: attributeChanged",
+      "1/1: connected",
+      "1/1: childReady",
+      "/2: constructor",
+      "2/2: attributeReady",
+      "2/2: connected",
+      "2/2: childReady",
+      "/3: constructor",
+      "3/3: attributeReady",
+      "3/3: connected",
+      "/4: constructor",
+      "4/4: attributeReady",
+      "4/4: connected",
+      "3/3: childReady",
+      "4/4: childReady",
+      "/5: constructor",
+      "5/5: attributeReady",
+      "5/5: connected",
+      "/6: constructor",
+      "6/6: attributeReady",
+      "6/6: connected",
+      "5/5: childReady",
+      "6/6: childReady",
+      "/7: constructor",
+      "7/7: attributeReady",
+      "7/7: connected",
+      "/8: constructor",
+      "8/8: attributeReady",
+      "8/8: connected",
+      "7/7: childReady",
+      "8/8: childReady",
+      "/9: constructor",
+      "9/9: attributeReady",
+      "9/9: connected",
+      "9/9: childReady",
+      "script",
+      "/10: constructor",
+      "/10: attributeReady",
+      "/10: connected",
+      "/10: childReady",
+      "dom interactive"
+    ]
+  </script>
+</test-html>
+
+<test-html test="../constructionReady/test2.html">
+  <script expected>
+    [
+      "1, INNER-COMP, constructor",
+      "1, INNER-COMP, attributeReady",
+      "1, INNER-COMP, connected",
+      "1, INNER-COMP, childReady",
+      null,
+      "2, MIDDLE-COMP, constructor",
+      "3, INNER-COMP, constructor",
+      "3, INNER-COMP, attributeReady",
+      "2, MIDDLE-COMP, attributeReady",
+      "2, MIDDLE-COMP, connected",
+      "3, INNER-COMP, connected",
+      "2, MIDDLE-COMP, childReady",
+      "3, INNER-COMP, childReady",
+      null,
+      "4, OUTER-COMP, constructor",
+      "5, MIDDLE-COMP, constructor",
+      "6, INNER-COMP, constructor",
+      "6, INNER-COMP, attributeReady",
+      "5, MIDDLE-COMP, attributeReady",
+      "7, MIDDLE-COMP, constructor",
+      "8, INNER-COMP, constructor",
+      "8, INNER-COMP, attributeReady",
+      "7, MIDDLE-COMP, attributeReady",
+      "4, OUTER-COMP, attributeReady",
+      "4, OUTER-COMP, connected",
+      "7, MIDDLE-COMP, connected",
+      "8, INNER-COMP, connected",
+      "4, OUTER-COMP, childReady",
+      "5, MIDDLE-COMP, childReady",
+      "6, INNER-COMP, childReady",
+      "7, MIDDLE-COMP, childReady",
+      "8, INNER-COMP, childReady"
+    ]
+  </script>
+</test-html>
+
+<test-html test="../constructionReady/test3.html">
+  <script expected>
+    [
+      "constructor",
+      "ARcb",
+      "accb",
+      "ccb",
+      "CCcb",
+      "constructor",
+      "ARcb",
+      "ccb",
+      "CCcb",
+      "constructor",
+      "ARcb",
+      "CCcb"
+    ]
+  </script>
+</test-html>
+<script type="module" src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@v1.0.0/TestHTML.js"></script>

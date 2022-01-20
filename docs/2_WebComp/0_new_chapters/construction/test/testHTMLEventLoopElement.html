@@ -1,37 +1,30 @@
 <h3>HTMLEventLoopElement</h3>
 <test-html test="../EventLoop/test_error_1a.html">
     <script expected>
-      ["Add incorrect event-loop",
+      ["Error: set incorrect event-loop to incorrect element via innerHTML",
         [false, "Error"],
-        "Add correct event-loop", "dispatch new event", "Two event-loop elements",
+        "Expect that there is no event-element in document", true,
+        "Add correct event-loop to correct element via innerHTML", true,
+        "dispatch new event",
+        "check dispatched event inside new event-loop element", true,
+        "Error: second event-loop element",
         [true, "Error"],
-        "Three event-loop elements",
-        [true, "Error"],
-        "Append to illegal element",
-        [true, "Error"],
-        "Dispatch new event on element without :target",
-        [true, "Error"]]
+        "Error: third event-loop elements",
+        [true, "Error"]
+      ]
     </script>
 </test-html>
 
 <test-html test="../EventLoop/test_error_1b.html">
     <script expected>
-      ["Error: set incorrect event-loop to incorrect element via innerHTML",
+      ["Error: Append incorrect event-loop",
         [false, "Error"],
-        "Expect that there is no event-element in document", true,
-        "Add correct event-loop to correct element via innerHTML", true,
-        "dispatch new event","check dispatched event inside new event-loop element", true,
-        "Error: second event-loop element",
-        [true, "Error"], "Error: third event-loop elements",
-        [true, "Error"]]
+        "Expect that there is no event-element in document",
+        true, "Add correct event-loop to correct element via innerHTML", true,
+        "Check dispatched event inside new event-loop element", true,
+        "a"
+      ]
     </script>
 </test-html>
 
-<test-html test="../EventLoop/test_error_1c.html">
-    <script expected>
-      ["Error: dispatch new event when no event-loop in document",
-        [false, "Error"]]
-    </script>
-</test-html>
-
-<script type="module" src="TestComponent.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@v1.0.0/TestHTML.js"></script>

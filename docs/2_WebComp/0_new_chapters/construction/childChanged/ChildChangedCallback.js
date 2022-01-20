@@ -1,135 +1,102 @@
-//DEPENDS ON childReadyCallback()
-(function () {
+(function (addEventListener, removeEventListener) {
 
-  //observes the host chain for all hosts that might slot in an element.
-  class SlotHostObserver {
+  class ChildChangedNodes {
 
-    static #cache = new WeakMap();
-
-    static* #slotMatroschkaHosts(el) {
-      for (; el; el = SlotHostObserver.#nextSlotMatroschkaHost(el))
-        yield el;
-    }
-
-    static #nextSlotMatroschkaHost(el) {
-      for (let c of el.childNodes) {
-        if (c instanceof HTMLSlotElement)
-          return c.getRootNode().host;
-      }
-    }
-
-    static observe(el, cb) {
-      const mo = new MutationObserver(() => cb(el))
-      SlotHostObserver.#cache.set(el, mo);
-      for (let host of SlotHostObserver.#slotMatroschkaHosts(el))
-        mo.observe(host, {childList: true});
-    }
-
-    static refresh(el) {
-      const mo = SlotHostObserver.#cache.get(el);
-      mo.disconnect();
-      //todo it is possible to *not* disconnect and re-observe if the slotMatroschkaHosts have not changed.
-      for (let host of SlotHostObserver.#slotMatroschkaHosts(el))
-        mo.observe(host, {childList: true});
-    }
-  }
-
-  class ChildChangedRecord {
-
-    static #flatChildNodesCache = new WeakMap();
-
-    #news;
+    #now;
     #old;
-    #added;
-    #removed;
+    static #empty = [];
 
-    constructor(newNodes, oldNodes, added, removed) {
-      this.#news = newNodes;
-      this.#old = oldNodes;
-      this.#added = added;
-      this.#removed = removed;
+    constructor(now, old) {
+      this.#now = now;
+      this.#old = old || ChildChangedNodes.#empty;
     }
 
-    get newNodes() {
-      return Object.freeze(this.#news);
+    get old() {
+      return this.#old.slice();
     }
 
-    get oldNodes() {
-      return Object.freeze(this.#old);
+    get now() {
+      return this.#now.slice();
     }
 
-    get addedNodes() {
-      return Object.freeze(this.#added);
+    get added() {
+      return this.#now.filter(n => this.#old.indexOf(n) === -1);
     }
 
-    get removedNodes() {
-      return Object.freeze(this.#removed);
-    }
-
-    static #init(el) {
-      const nowChildren = flatChildNodes(el);
-      const rec = new ChildChangedRecord(nowChildren, [], nowChildren, []);
-      ChildChangedRecord.#flatChildNodesCache.set(el, rec);
-      return rec;
-    }
-
-    static check(el) {
-      const prev = ChildChangedRecord.#flatChildNodesCache.get(el);
-      if (!prev)
-        return ChildChangedRecord.#init(el);
-      const nowChildren = flatChildNodes(el);
-      const d = diff(prev.#news, nowChildren);
-      if (!d)
-        return;
-      const rec = new ChildChangedRecord(nowChildren, prev.#news, d.added, d.removed);
-      ChildChangedRecord.#flatChildNodesCache.set(el, rec);
-      return rec;
+    get removed() {
+      return this.#old.filter(n => this.#now.indexOf(n) === -1);
     }
   }
 
-  function flatChildNodes(el) {
-    return Array.from(el.childNodes).map(c => c instanceof HTMLSlotElement ? c.assignedNodes({flatten: true}) : c).flat(1);
-  }
+  const lastSeen = new WeakMap();
+  const listeners = new WeakMap();
 
-  //difference between two maps
-  //note, if elements are moved around, not added or removed, then this will return {added: [], removed:[]}, which is good.
-  function diff(as, bs) {
-    if (as.length !== bs.length || !as.every((e, i) => bs[i] === e))
-      return {
-        added: bs.filter(b => as.indexOf(b) === -1),
-        removed: as.filter(a => bs.indexOf(a) === -1)
-      };
-  }
-
-  function callChildChangedCallback(el, childChangedRecord) {
+  function callChildChanged(el, slots, nodes, oldNodes) {
+    updateSlotchangeListener(el, slots);
+    lastSeen.set(el, nodes);
     try {
-      el.childChangedCallback(childChangedRecord);
+      el.childChangedCallback(new ChildChangedNodes(nodes, oldNodes));
     } catch (error) {
       window.dispatchEvent(new ErrorEvent('error', {error}));
     }
   }
 
-  function doChildChanged(el) {
-    const rec = ChildChangedRecord.check(el);
-    if (rec) {
-      SlotHostObserver.refresh(el); //todo here we can pass in added/removed to check if there are any slot elements that are mutated.
-      callChildChangedCallback(el, rec);
+  function getSlotsAndFlattenChildren(el) {
+    const nodes = [];
+    const slots = [];
+    for (let n of el.childNodes) {
+      if (n instanceof HTMLSlotElement) {
+        slots.push(n);
+        nodes.push(...n.assignedNodes({flatten: true}));
+      } else
+        nodes.push(n);
+    }
+    return {nodes, slots};
+  }
+
+  function updateSlotchangeListener(el, slots) {
+    const previousSlotChangeListener = listeners.get(el);
+    if (previousSlotChangeListener && !slots.length) {
+      removeEventListener.call(el, 'slotchange', listeners.get(el), true);
+      listeners.delete(el);
+    } else if (!previousSlotChangeListener && slots.length) {
+      const listener = checkChildChangedFromEvent.bind(el);
+      listeners.set(el, listener);
+      addEventListener.call(el, 'slotchange', listener, true);
     }
   }
 
-  // childReady is called top down, similarly to connectedCallback.
-  // this is necessary in order to get the parent slotted children. The assign nodes must go top down.
-  function setupChildChangedCallback(el) {
-    SlotHostObserver.observe(el, doChildChanged);
-    callChildChangedCallback(el, ChildChangedRecord.check(el));
+  function arraysAreTheSame(a, b) {
+    return a.length === b?.length && a.every((n, i) => n === b[i]);
   }
 
-  window.HTMLElement = class ChildChangedHTMLElement extends HTMLElement {
+  function setupChildChanged(el) {
+    MO.observe(el, {childList: true});
+    const {nodes, slots} = getSlotsAndFlattenChildren(el);
+    callChildChanged(el, slots, nodes);
+  }
 
-    constructor() {
-      super();
-      this.childChangedCallback && (ConstructionFrame.now.childChangies ??= []).push(this);
+  function checkChildChanged(el) {
+    const {nodes, slots} = getSlotsAndFlattenChildren(el);
+    const previousNodes = lastSeen.get(el);
+    if (arraysAreTheSame(nodes, previousNodes))
+      return;
+    callChildChanged(el, slots, nodes, previousNodes);
+  }
+
+  function checkChildChangedFromEvent(e) {
+    for (let el of e.composedPath()) {
+      if (!(el instanceof HTMLSlotElement))   //slotchangeNipSlip
+        return;
+      if (el.parentNode === this)
+        return checkChildChanged(this);
     }
   }
-  ConstructionFrame.observe('complete', frame => frame.childChangies?.forEach(setupChildChangedCallback));
-})();
+
+  function checkChildChangedFromMO(mrs) {
+    mrs.map(mr => mr.target).filter((el, i, ar) => ar.indexOf(el) === i).forEach(checkChildChanged);
+  }
+
+  const MO = new MutationObserver(checkChildChangedFromMO);
+  ElementObserver.complete(el => el.childChangedCallback && setupChildChanged(el));
+})(addEventListener, removeEventListener);

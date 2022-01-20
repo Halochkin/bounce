@@ -1,0 +1,35 @@
+<script src="../MonkeyPatch/MonkeyPatch.js"></script>
+<script src="../ParserBreakEvent/ParserBreakEvent.js"></script>
+<script src="../constructionFrame/constructionFrame.js"></script>
+<script src="../childChanged/ChildChangedCallback.js"></script>
+<script src="../EventTarget/EventTarget.js"></script>
+<script src="../HTMLEventElement/ElementEvent.js"></script>
+<script src="../HTMLEventElement/HTMLEventElement.js"></script>
+<script src="EventLoop.js"></script>
+
+<body :uid="1">
+<div :uid="2">
+    <event-loop>
+        <event-loop></event-loop>
+    </event-loop>
+</div>
+</body>
+
+<script>
+
+  window.addEventListener("error", e => {
+    e.preventDefault();
+    const severalEventLoops = document.querySelectorAll("event-loop").length === 1;
+    console.log(severalEventLoops, "Error");
+  });
+
+  console.log("Error: dispatch new event when no event-loop in document")
+  document.body.dispatchEvent(new Event("click"));
+
+  console.log("Add correct event-loop");
+  document.body.appendChild(document.createElement("event-loop"));
+
+  console.log("Error: check dispatched event inside new event-loop element");
+  console.log(document.querySelector("event-loop").firstChild?.tagName === "EVENT");
+
+</script>

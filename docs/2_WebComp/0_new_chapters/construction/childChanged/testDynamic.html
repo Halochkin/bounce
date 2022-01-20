@@ -1,6 +1,5 @@
-<script src="../ParserBreakEvent/ParserBreakEvent.js"></script>
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
 <script src="../MonkeyPatch/MonkeyPatch.js"></script>
-<script src="../constructionFrame/constructionFrame.js"></script>
 <script src="ChildChangedCallback.js"></script>
 <script>
   class InnerComp extends HTMLElement {
@@ -14,8 +13,8 @@
       console.log('connected', this.tagName);
     }
 
-    childChangedCallback(rec) {
-      console.log("childChanged", this.tagName, rec.newNodes.length);
+    childChangedCallback(nodes) {
+      console.log("childChanged", this.tagName, nodes.now.length);
     }
   }
 
@@ -31,8 +30,8 @@
       console.log('connected', this.tagName);
     }
 
-    childChangedCallback(rec) {
-      console.log("childChanged", this.tagName, rec.newNodes.length);
+    childChangedCallback(nodes) {
+      console.log("childChanged", this.tagName, nodes.now.length);
     }
   }
 
@@ -48,8 +47,8 @@
       console.log('connected', this.tagName);
     }
 
-    childChangedCallback(rec) {
-      console.log("childChanged", this.tagName, rec.newNodes.length);
+    childChangedCallback(nodes) {
+      console.log("childChanged", this.tagName, nodes.now.length);
     }
   }
 

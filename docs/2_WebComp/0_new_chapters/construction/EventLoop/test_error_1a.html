@@ -1,6 +1,6 @@
 <script src="../MonkeyPatch/MonkeyPatch.js"></script>
-<script src="../ParserBreakEvent/ParserBreakEvent.js"></script>
-<script src="../constructionFrame/constructionFrame.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/orstavik/parse@v1.0.0/parse.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
 <script src="../childChanged/ChildChangedCallback.js"></script>
 <script src="../EventTarget/EventTarget.js"></script>
 <script src="../HTMLEventElement/ElementEvent.js"></script>
@@ -21,24 +21,28 @@
 
   const divElement = document.querySelector("div");
 
-  console.log("Add incorrect event-loop");
-  divElement.appendChild(document.createElement("event-loop"));
+  console.log("Error: set incorrect event-loop to incorrect element via innerHTML");
+  divElement.innerHTML = `
+    <event-loop>
+        <event-loop></event-loop>
+    </event-loop>`;
 
-  console.log("Add correct event-loop");
-  document.body.appendChild(document.createElement("event-loop"));
+  console.log("Expect that there is no event-element in document")
+  console.log(!document.querySelectorAll("event-loop").length)
+
+  console.log("Add correct event-loop to correct element via innerHTML");
+  document.body.innerHTML = `<event-loop></event-loop>`;
+  console.log(!!document.querySelectorAll("event-loop").length)
 
   console.log("dispatch new event")
   document.body.dispatchEvent(new Event("test"));
 
-  console.log("Two event-loop elements");
-  document.body.appendChild(document.createElement("event-loop"));
+  console.log("check dispatched event inside new event-loop element");
+  console.log(document.querySelector("event-loop").firstChild?.tagName === "EVENT");
 
-  console.log("Three event-loop elements");
-  document.body.appendChild(document.createElement("event-loop"));
+  console.log("Error: second event-loop element");
+  document.body.innerHTML += `<event-loop></event-loop>`;
 
-  console.log("Append to illegal element");
-  divElement.appendChild(document.createElement("event-loop"));
-
-  console.log("Dispatch new event on element without :target");
-  divElement.dispatchEvent(new MouseEvent('click'));
+  console.log("Error: third event-loop elements");
+  document.body.innerHTML += `<event-loop></event-loop>`;
 </script>

@@ -1,6 +1,5 @@
-<script src="../ParserBreakEvent/ParserBreakEvent.js"></script>
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
 <script src="../MonkeyPatch/MonkeyPatch.js"></script>
-<script src="../constructionFrame/constructionFrame.js"></script>
 <script src="ChildChangedCallback.js"></script>
 <script>
   function print(type, el, rec) {
@@ -9,7 +8,7 @@
       el.tagName,
       el.shadowRoot.querySelector('slot').assignedNodes({flatten: true}).map(n=>n.nodeName),
       el.shadowRoot.querySelector('slot').assignedNodes().map(n=>n.nodeName),
-      rec?.newNodes.map(n=>n.nodeName)
+      rec?.now.map(n=>n.nodeName)
     );
   }
 
@@ -33,10 +32,10 @@
       print('connected', this);
     }
 
-    childChangedCallback(rec) {
-      print("childChanged before", this, rec);
+    childChangedCallback(nodes) {
+      print("childChanged before", this, nodes);
       this.shadowRoot.querySelector('slot').assign(...this.childNodes);
-      print("childChanged after", this, rec);
+      print("childChanged after", this, nodes);
     }
   }
 

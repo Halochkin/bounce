@@ -1,10 +1,9 @@
-<script src="../ParserBreakEvent/ParserBreakEvent.js"></script>
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
 <script src="../MonkeyPatch/MonkeyPatch.js"></script>
-<script src="../constructionFrame/constructionFrame.js"></script>
 <script src="ChildChangedCallback.js"></script>
 <script>
-  function print(type, el, rec) {
-    console.log(type, el.tagName, el.shadowRoot.children[0].assignedNodes().length, rec?.newNodes.length);
+  function print(type, el, nodes) {
+    console.log(type, el.tagName, el.shadowRoot.children[0].assignedNodes().length, nodes?.now.length);
   }
 
   class CompA extends HTMLElement {

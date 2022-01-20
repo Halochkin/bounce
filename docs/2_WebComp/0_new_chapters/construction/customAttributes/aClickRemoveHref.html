@@ -1,0 +1,24 @@
+<a id="one" href="#darkness">hello sunshine</a>
+
+<a id="two">hello nothing</a>
+
+<p>
+  This test proves that the href attribute is dynamic.
+  Remove the attribute and you remove the context during propagation!
+  This is super nice!
+  This makes the behavior dynamic during the propagation, and makes for much simpler internal algorithms.
+</p>
+
+
+<script>
+  const a = document.querySelector("#one");
+  a.addEventListener('click', e=> {
+    a.removeAttribute('href');
+    setTimeout(()=> console.log(location.href), 100);
+  });
+  const b = document.querySelector("#two");
+  b.addEventListener('click', e=> {
+    b.setAttribute('href', "#sunshine");
+    setTimeout(()=> console.log(location.href), 100);
+  });
+</script>
