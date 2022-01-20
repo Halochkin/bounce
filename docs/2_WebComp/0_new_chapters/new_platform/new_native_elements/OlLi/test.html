@@ -1,0 +1,50 @@
+<script src="../../../construction/MonkeyPatch/MonkeyPatch.js"></script>
+<script src="../../../construction/ParserBreakEvent/ParserBreakEvent.js"></script>
+<script src="../../../construction/constructionFrame/constructionFrame.js"></script>
+<script src="../../../construction/childChanged/ChildChangedCallback.js"></script>
+
+
+<script>
+  class Ol extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: "open"});
+      this.shadowRoot.innerHTML = `
+        <style>
+          ::slotted(*){
+          display: block;
+          }
+          ::slotted(*)::before {
+            content: "-";
+          }
+        </style>
+        <slot></slot>3`;
+    }
+
+    childChangedCallback(rec) {
+      const childList = [...this.childNodes].slice(0, this.childNodes.length - 1);
+      for (let i = 0, j = 0; i < childList.length; i += 2, j++) {
+
+        console.log(childList[i].querySelector("::marker"));
+        childList[i].textContent = j + ". ";
+      }
+    }
+  }
+
+  customElements.define("ol-element", Ol);
+
+</script>
+
+
+<ol-element>
+    <div>a</div>
+    <div>b</div>
+    <div>c</div>
+</ol-element>
+
+
+<ol>
+    <li>a</li>
+    <li>b</li>
+    <li>c</li>
+</ol>
