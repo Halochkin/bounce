@@ -40,6 +40,57 @@
   </script>
 </test-html>
 
+
+<test-html test="../childChanged/testBeginnings2.html">
+  <script expected>
+    [
+      ["constructor", "FRAME-OL"],
+      ["childChangedCallback", "FRAME-OL"],
+      ["#text", "LI", "#text", "LI", "#text", "LI", "#text"],
+      ["constructor", "FRAME-OL"],
+      ["constructor", "FRAME-FRAME-OL"],
+      ["childChangedCallback", "FRAME-FRAME-OL"],
+      ["#text", "LI", "#text", "LI", "#text", "LI", "#text"],
+      ["childChangedCallback", "FRAME-OL"],
+      ["#text", "LI", "#text", "LI", "#text", "LI", "#text"]
+    ]
+  </script>
+</test-html>
+
+<test-html test="../childChanged/test_details_slotAssignment_auto.html">
+  <script expected>
+    [
+      ["constructor", "FRAME-SUMMARY"],
+      ["childChangedCallback", "FRAME-SUMMARY"],
+      ["#text"],
+      ["constructor", "FRAME-SUMMARY"],
+      ["childChangedCallback", "FRAME-DETAILS"],
+      ["#text", "FRAME-SUMMARY", "#text", "FRAME-SUMMARY", "#text", "LI", "#text", "LI", "#text", "LI", "#text"],
+      ["childChangedCallback", "FRAME-SUMMARY"],
+      ["#text"],
+      ["childChangedCallback", "FRAME-DETAILS"],
+      ["#text", "LI", "#text", "LI", "#text", "LI", "#text"]
+    ]
+  </script>
+</test-html>
+
+<test-html test="../childChanged/test_details_slotAssignment_manual.html">
+  <script expected>
+    [
+      ["constructor", "FRAME-SUMMARY"],
+      ["childChangedCallback", "FRAME-SUMMARY"],
+      ["#text"],
+      ["constructor", "FRAME-SUMMARY"],
+      ["childChangedCallback", "FRAME-DETAILS"],
+      ["#text", "FRAME-SUMMARY", "#text", "FRAME-SUMMARY", "#text", "LI", "#text", "LI", "#text", "LI", "#text"],
+      ["childChangedCallback", "FRAME-SUMMARY"],
+      ["#text"],
+      ["childChangedCallback", "FRAME-DETAILS"],
+      ["#text", "LI", "#text", "LI", "#text", "LI", "#text"]
+    ]
+  </script>
+</test-html>
+
 <test-html test="../childChanged/testDynamic.html">
   <script expected>
     [
