@@ -1,0 +1,76 @@
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
+<script src="ChildChangedCallback.js"></script>
+<script>
+  class FramedDetails extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: "open"});
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host {
+            display: block;
+          }
+
+          :host(:not([open])) slot#content {
+            display: none;
+          }
+          b {
+            display: inline-block;
+          }
+          :host([open]) b {
+            transform: rotate(90deg);
+          }
+        </style>
+        <div><b>&#x25BA;</b><slot name="summary">Details</slot> <!-- fallback Details text --->
+        </div>
+        <slot id="content"></slot>
+      `;
+      this.shadowRoot.querySelector("b").addEventListener("click", function () {
+        this.hasAttribute("open") ? this.removeAttribute("open") : this.setAttribute("open", "");
+      }.bind(this));
+    }
+
+    childChangedCallback(nodes) {
+      console.log("childChangedCallback", this.tagName);
+      const summary = nodes.now.find(node => node.tagName === "FRAME-SUMMARY");
+      summary && summary.setAttribute("slot", "summary");
+      console.log(nodes.now.map(n => n.nodeName));
+      this.shadowRoot.querySelector('slot').assign(...this.childNodes);
+    }
+  }
+
+  customElements.define("frame-details", FramedDetails);
+
+  class FrameSummary extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: 'open'});
+      this.shadowRoot.innerHTML = `<slot slot="summary" ></slot>`;
+      console.log("constructor", this.tagName);
+    }
+
+    childChangedCallback(nodes) {
+      console.log("childChangedCallback", this.tagName);
+      console.log(nodes.now.map(n => n.nodeName));
+      this.shadowRoot.querySelector('slot').assign(...this.childNodes);
+    }
+  }
+
+  customElements.define("frame-summary", FrameSummary);
+</script>
+
+<h3>slotAssignment auto</h3>
+
+<frame-details open>
+    <frame-summary>Something important here</frame-summary>
+    <frame-summary>Extra summary as item</summary></frame-summary>
+    <li>hello</li>
+    <li>world</li>
+    <li>bob</li>
+</frame-details>
+
+<frame-details>
+    <li>hello</li>
+    <li>world</li>
+    <li>bob</li>
+</frame-details>
