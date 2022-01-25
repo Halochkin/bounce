@@ -3,23 +3,39 @@
   <script expected>
     [
       [1, "INNER-COMP", "constructor", null],
-      [1, "INNER-COMP", "childChanged", {}],
+      [1, "INNER-COMP", "childChanged", []],
       null,
       [2, "MIDDLE-COMP", "constructor", null],
       [3, "INNER-COMP", "constructor", null],
-      [2, "MIDDLE-COMP", "childChanged", {}],
-      [3, "INNER-COMP", "childChanged", {}],
+      [2, "MIDDLE-COMP", "childChanged", []],
+      [3, "INNER-COMP", "childChanged", []],
       null,
       [4, "OUTER-COMP", "constructor", null],
       [5, "MIDDLE-COMP", "constructor", null],
       [6, "INNER-COMP", "constructor", null],
       [7, "MIDDLE-COMP", "constructor", null],
       [8, "INNER-COMP", "constructor", null],
-      [4, "OUTER-COMP", "childChanged", {}],
-      [5, "MIDDLE-COMP", "childChanged", {}],
-      [6, "INNER-COMP", "childChanged", {}],
-      [7, "MIDDLE-COMP", "childChanged", {}],
-      [8, "INNER-COMP", "childChanged", {}]
+      [4, "OUTER-COMP", "childChanged", []],
+      [5, "MIDDLE-COMP", "childChanged", []],
+      [6, "INNER-COMP", "childChanged", []],
+      [7, "MIDDLE-COMP", "childChanged", []],
+      [8, "INNER-COMP", "childChanged", []]
+    ]
+  </script>
+</test-html>
+
+<test-html test="../childChanged/testBeginnings2.html">
+  <script expected>
+    [
+      ["constructor", "FRAME-OL"],
+      ["childChangedCallback", "FRAME-OL"],
+      ["#text", "LI", "#text", "LI", "#text", "LI", "#text"],
+      ["constructor", "FRAME-OL"],
+      ["constructor", "FRAME-FRAME-OL"],
+      ["childChangedCallback", "FRAME-FRAME-OL"],
+      ["#text", "LI", "#text", "LI", "#text", "LI", "#text"],
+      ["childChangedCallback", "FRAME-OL"],
+      ["#text", "LI", "#text", "LI", "#text", "LI", "#text"]
     ]
   </script>
 </test-html>
@@ -96,6 +112,21 @@
   </script>
 </test-html>
 
+<test-html test="../childChanged/testDynamic2.html">
+  <script expected>
+    [
+      "constructor",
+      "connected",
+      ["childChanged", ["#text", "LI", "#text", "LI", "#text", "LI", "#text"]],
+      "before",
+      "after",
+      "before prt",
+      ["childChanged", ["#text", "#text", "LI", "#text", "LI", "#text"]],
+      "after prt"
+    ]
+  </script>
+</test-html>
+
 <test-html test="../childChanged/testAssignNodes.html">
   <script expected>
     [
@@ -124,10 +155,31 @@
       ["connected", "COMP-B", 0, null],
       ["constructor", "COMP-C", 0, null],
       ["connected", "COMP-C", 0, null],
-      ["childChanged", "COMP-C", 3, 3],
+      ["childChanged", "COMP-A", 5, 5],
       ["childChanged", "COMP-B", 5, 5],
-      ["childChanged", "COMP-A", 5, 5]
+      ["childChanged", "COMP-C", 3, 3]
     ]
   </script>
 </test-html>
-<script type="module" src="TestComponent.js"></script>
+<test-html test="../childChanged/error_in_callback_becomes_error_event.html">
+  <script expected>
+    [
+      "WEBCOMP-A childChanged",
+      ["#text", "WEBCOMP-B", "#text"],
+      "error",
+      "WEBCOMP-B childChanged",
+      [],
+      "error"
+    ]
+  </script>
+</test-html>
+<test-html test="../childChanged/testChildChangedNodes.html">
+  <script expected>
+    [
+      ["WEBCOMP-A", ["new", ["#text", "WEBCOMP-B", "#text"]], ["old", []], ["added", ["#text", "WEBCOMP-B", "#text"]], ["removed", []]],
+      ["WEBCOMP-B", ["new", []], ["old", []], ["added", []], ["removed", []]],
+      ["WEBCOMP-A", ["new", ["#text", "#text"]], ["old", ["#text", "WEBCOMP-B", "#text"]], ["added", []], ["removed", ["WEBCOMP-B"]]]
+    ]
+  </script>
+</test-html>
+<script type="module" src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@v1.0.0/TestHTML.js"></script>

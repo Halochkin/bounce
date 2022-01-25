@@ -1,19 +1,13 @@
 <script src="../MonkeyPatch/MonkeyPatch.js"></script>
-<script src="../ParserBreakEvent/ParserBreakEvent.js"></script>
-<script src="../constructionFrame/constructionFrame.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/orstavik/parse@v1.0.0/parse.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
 <script src="../childChanged/ChildChangedCallback.js"></script>
 <script src="../EventTarget/EventTarget.js"></script>
 <script src="../HTMLEventElement/ElementEvent.js"></script>
 <script src="../HTMLEventElement/HTMLEventElement.js"></script>
 <script src="EventLoop.js"></script>
 
-<body :uid="1">
-<div :uid="2">
-    <event-loop>
-        <event-loop></event-loop>
-    </event-loop>
-</div>
-</body>
+<body :uid="1"></body>
 
 <script>
 
@@ -28,7 +22,7 @@
 
   console.log("Add correct event-loop");
   document.body.appendChild(document.createElement("event-loop"));
-
+                                                                                //todo here we should dispatch the click event anew?
   console.log("Error: check dispatched event inside new event-loop element");
   console.log(document.querySelector("event-loop").firstChild?.tagName === "EVENT");
 

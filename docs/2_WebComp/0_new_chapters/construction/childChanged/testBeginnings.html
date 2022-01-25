@@ -1,11 +1,10 @@
-<script src="../ParserBreakEvent/ParserBreakEvent.js"></script>
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
 <script src="../MonkeyPatch/MonkeyPatch.js"></script>
-<script src="../constructionFrame/constructionFrame.js"></script>
 <script src="ChildChangedCallback.js"></script>
 <script>
   (function () {
-    function printCB(type, el, rec) {
-      console.log(el.__id, el.tagName, type, rec);
+    function printCB(type, el, nodes) {
+      console.log(el.__id, el.tagName, type, nodes?.now);
     }
 
     let ids = 0;
@@ -18,8 +17,8 @@
         printCB('constructor', this);
       }
 
-      childChangedCallback(rec) {
-        printCB("childChanged", this, rec);
+      childChangedCallback(nodes) {
+        printCB("childChanged", this, nodes);
       }
     }
 
@@ -49,8 +48,8 @@
         this.shadowRoot.append(clone);
       }
 
-      childChangedCallback(rec) {
-        printCB("childChanged", this, rec);
+      childChangedCallback(nodes) {
+        printCB("childChanged", this, nodes);
       }
     }
 
