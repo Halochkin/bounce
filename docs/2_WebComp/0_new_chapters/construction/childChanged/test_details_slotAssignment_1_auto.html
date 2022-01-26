@@ -1,0 +1,107 @@
+<script src="https://cdn.jsdelivr.net/combine/gh/orstavik/parse@v1.0.0/parse.js,gh/orstavik/ElementObserver@v1.0.1/constructionFrame.js"></script>
+<script src="ChildChangedCallback.js"></script>
+<script>
+
+  class MyDetailsWithFrame extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: 'open'});
+      this.shadowRoot.innerHTML = `<my-details><slot slot="summary" name="summary">Summary</slot> <slot>Everything another</slot> </my-details>`
+      console.log("constructor", this.tagName);
+    }
+
+    childChangedCallback(nodes) {
+      console.log("childChangedCallback", this.tagName);
+      console.log(nodes.now.map(n => n.nodeName));
+    }
+  }
+
+  customElements.define("my-details-with-frame", MyDetailsWithFrame);
+
+  class MyDetails extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: "open"});
+      this.shadowRoot.innerHTML = `
+        <style>
+
+          slot:not([name="summary"]){
+            display: block;
+          }
+
+          :host(:not([open])) slot:not([name="summary"]) {
+            display: none;
+          }
+
+          b {
+            display: inline-block;
+          }
+
+          :host([open]) b {
+            transform: rotate(90deg);
+          }
+        </style>
+        <b>&#x25BA;</b>
+        <slot name="summary">Details</slot>
+        <slot id="content">Everything another</slot>
+      `;
+      this.shadowRoot.querySelector("b").addEventListener("click", function () {
+        this.hasAttribute("open") ? this.removeAttribute("open") : this.setAttribute("open", "");
+      }.bind(this));
+    }
+
+    childChangedCallback(nodes) {
+      const firstIsSummary = nodes.now[0].nodeName === "MY-SUMMARY";
+
+      if (firstIsSummary) {
+        nodes.now[0].setAttribute("slot", "summary");
+        // remove the slot attribute on old summary elements that are no longer the first summary element in auto mode
+        [...nodes.now].splice(1, nodes.now.length).filter(item => item.nodeName === "MY-SUMMARY").forEach(
+          item => item.removeAttribute("slot"));
+      }
+
+      console.log("childChangedCallback", this.tagName);
+      console.log(nodes.now.map(n => n.nodeName));
+    }
+  }
+
+  customElements.define("my-details", MyDetails);
+
+  class MySummary extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: 'open'});
+      this.shadowRoot.innerHTML = `<slot>Summary</slot>`;
+      console.log("constructor", this.tagName);
+    }
+
+    childChangedCallback(nodes) {
+      console.log("childChangedCallback", this.tagName);
+      console.log(nodes.now.map(n => n.nodeName));
+    }
+  }
+
+  customElements.define("my-summary", MySummary);
+</script>
+
+<my-details-with-frame>
+    <my-summary id="one" slot="summary">one</my-summary>
+    <div>sunshine</div>
+</my-details-with-frame>
+
+
+<script>
+  const framedDetails = document.querySelector("my-details-with-frame");
+
+  const summaryElement = document.createElement("my-summary");
+  const h1 = document.createElement("h1");
+  h1.textContent = "hello";
+
+  summaryElement.innerText = "two";
+  summaryElement.setAttribute("id", "two");
+  summaryElement.setAttribute("slot", "summary");
+
+  setTimeout(() => {
+    framedDetails.prepend(summaryElement, h1)
+
+  }, 10)</script>
